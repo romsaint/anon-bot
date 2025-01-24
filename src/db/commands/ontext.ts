@@ -1,83 +1,58 @@
-import TelegramBot from "node-telegram-bot-api";
-import { anonState, bot, replyState } from "../..";
-import { onStart } from "./onStart";
+import TelegramBot from 'node-telegram-bot-api';
+import { bot, chatSessions, rejectState } from '../..';
+import { onStart } from './onStart';
+
 
 export async function onText(msg: TelegramBot.Message) {
     try {
         const userId = msg.from?.id;
         const text = msg.text;
 
-        if (msg.text === 'Back' && userId) {
-            for (const session of anonState[userId]) {
-                if (session.chatId === `${userId}-${session.targetUserId}` || session.chatId === `${session.targetUserId}-${userId}`) {
-                    session.replyOnly = true
-                }
-            }
-            await onStart(msg, null);
-            return;
-        }
-        if (!userId) {
-            return;
-        }
-
-        if (msg.reply_to_message?.message_id && msg.reply_to_message.from?.id && replyState[userId]?.length > 0) {
-            const targetSession = replyState[userId].find(session =>
-                session.chatId === `${userId}-${msg.reply_to_message?.from?.id}`
-            );
-
-            for (const session of replyState[userId]) {
-                if (!session.replyOnly) {
-                    await bot.sendMessage(
-                        session.targetUserId,
-                        `<b>Новое анонимное сообщение:</b>\n\n${text}\n\n<i>Свайпните для ответа</i>`,
-                        {
-                            parse_mode: "HTML",
-                            reply_markup: {
-                                inline_keyboard: [
-                                    [{ text: "Заблокировать", callback_data: `block-${session.chatId}` }]
-                                ]
-                            }
-                        }
-                    );
-                    let newChatId = `${userId}-${session.targetUserId}`;
-                    if (!replyState[session.targetUserId]) replyState[session.targetUserId] = [];
-                    replyState[session.targetUserId].push({
-                        targetUserId: userId,
-                        chatId: newChatId,
-                        replyOnly: false
-                    });
-                }
-
-                return;
-            }
-        }
-        if (!anonState[userId]?.length) {
-            return;
-        }
-
-
-        for (const session of anonState[userId]) {
-            if (!session.replyOnly) {
-                await bot.sendMessage(
-                    session.targetUserId,
-                    `<b>Новое анонимное сообщение:</b>\n\n${text}\n\n<i>Свайпните для ответа</i>`,
-                    {
-                        parse_mode: "HTML",
+        if (userId) {
+            if (text && chatSessions[userId] && userId == chatSessions[chatSessions[userId]]) {
+                if (text === 'Quit') {
+                    await bot.sendMessage(chatSessions[userId], "*Your interlocutor out of the chat room*", {
                         reply_markup: {
-                            inline_keyboard: [
-                                [{ text: "Заблокировать", callback_data: `block-${session.chatId}` }]
-                            ]
-                        }
-                    }
-                );
-                console.log(session)
+                            keyboard: [[{text: "Start"}]],
+                            resize_keyboard: true,
+                        },
+                        parse_mode: "Markdown"
+                    })
+                    chatSessions[chatSessions[userId]] = -1
+                    chatSessions[userId] = -1
+                    await bot.sendMessage(userId, "*You're out of the chat room*", {
+                        reply_markup: {
+                            keyboard: [[{text: "Start"}]],
+                            resize_keyboard: true,
+                        },
+                        parse_mode: "Markdown"
+                    })
+                    return
+                }
+
+                await bot.sendMessage(chatSessions[userId], text, {
+                    parse_mode: "Markdown"
+                })
+                return
+            }
+
+            switch (text) {
+                case 'Start':
+                    onStart(msg, null)
+                    return
+                case '/start':
+                    return
+                case 'back':
+                    onStart(msg, null)
+                    return
+            }
+
+            if(!rejectState[userId]) {
+                await bot.deleteMessage(msg.chat.id, msg.message_id)
             }
         }
-
     } catch (e) {
-        if (e instanceof Error) {
-            console.log(e.message);
-            await bot.sendMessage(msg.chat.id, 'Error :(');
-        }
+        if (e instanceof Error) console.log('e.message')
+        await bot.sendMessage(msg.chat.id, 'Error');
     }
 }
