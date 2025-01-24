@@ -1,14 +1,17 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { bot, chatSessions } from '../..';
+import { bot, redis } from '../..';
 
 
 export async function onAudio(msg: TelegramBot.Message) {
     try {
-        const userId = msg.from?.id;
+        const userId = msg.from?.id
+        
         if (userId) {
-            console.log(msg.audio)
-            if (chatSessions[userId] && userId == chatSessions[chatSessions[userId]] && msg.audio) {
-                await bot.sendAudio(chatSessions[userId], msg.audio.file_id)
+            const chatSessions1 = await redis.get(userId.toString())
+            const chatSessions2 = await redis.get(chatSessions1 || '-1')
+
+            if (msg.audio && chatSessions1 && userId.toString() == chatSessions2) {
+                await bot.sendAudio(chatSessions1, msg.audio.file_id)
                 return
             }
         }

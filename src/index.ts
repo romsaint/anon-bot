@@ -9,7 +9,6 @@ import { onAudio } from './db/commands/onAudio';
 import { onVoice } from './db/commands/onVoice';
 
 
-
 dotenv.config();
 
 const token = process.env.API_KEY_BOT;
@@ -22,11 +21,14 @@ export const bot = new TelegramBot(token, { polling: true });
 const commands = [
     { command: 'start', description: 'Start anonymous chat' }
 ]
+import { Redis } from "ioredis";
+
+export const redis = new Redis({
+    host: "localhost",
+    port: 6379
+});
 
 bot.setMyCommands(commands);
-
-export const chatSessions: {[key: number]: number} = {}
-export const rejectState: {[key: number]: boolean} = {}
 
 // Обработчики
 

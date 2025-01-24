@@ -1,14 +1,20 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { bot, chatSessions } from '../..';
-import { onStart } from './onStart';
+import { bot, redis } from '../..';
 
 
 export async function onPhoto(msg: TelegramBot.Message) {
     try {
-        const userId = msg.from?.id;
+        const userId = msg.from?.id
+        
         if (userId) {
-            if (chatSessions[userId] && userId == chatSessions[chatSessions[userId]] && msg.photo) {
-                await bot.sendPhoto(chatSessions[userId], msg.photo[msg.photo.length - 1].file_id)
+            const chatSessions1 = await redis.get(userId.toString())
+            const chatSessions2 = await redis.get(chatSessions1 || '-1')
+
+            if (msg.photo && chatSessions1 && userId.toString() == chatSessions2) {
+                await bot.sendChatAction(msg.chat.id, 'upload_photo')
+                await bot.sendPhoto(chatSessions1, msg.photo[msg.photo.length - 1].file_id, {
+                    has_spoiler: true
+                })
                 return
             }
         }

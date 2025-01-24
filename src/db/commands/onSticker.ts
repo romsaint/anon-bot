@@ -1,13 +1,16 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { bot, chatSessions } from '../..';
+import { bot, redis } from '../..';
 
 
 export async function onSticker(msg: TelegramBot.Message) {
     try {
         const userId = msg.from?.id;
         if (userId) {
-            if (chatSessions[userId] && userId == chatSessions[chatSessions[userId]] && msg.sticker) {
-                await bot.sendSticker(chatSessions[userId], msg.sticker.file_id)
+            const chatSessions1 = await redis.get(userId.toString())
+            const chatSessions2 = await redis.get(chatSessions1 || '-1')
+
+            if (msg.sticker && chatSessions1 && userId.toString() == chatSessions2) {
+                await bot.sendSticker(chatSessions1, msg.sticker.file_id)
                 return
             }
         }
