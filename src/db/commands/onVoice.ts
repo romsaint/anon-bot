@@ -11,8 +11,8 @@ export async function onVoice(msg: TelegramBot.Message) {
             const chatSessions2 = await redis.get(chatSessions1 || '-1')
 
             if (chatSessions1 && userId.toString() === chatSessions2 && msg.voice) {
-                await bot.sendChatAction(msg.chat.id, 'record_voice')
-                await bot.sendChatAction(msg.chat.id, 'upload_voice')
+                await bot.sendChatAction(chatSessions1, 'record_voice')
+                await bot.sendChatAction(chatSessions1, 'upload_voice')
                 await bot.sendVoice(chatSessions1, msg.voice.file_id)
                 return
             }

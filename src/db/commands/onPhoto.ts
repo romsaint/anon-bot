@@ -11,7 +11,7 @@ export async function onPhoto(msg: TelegramBot.Message) {
             const chatSessions2 = await redis.get(chatSessions1 || '-1')
 
             if (msg.photo && chatSessions1 && userId.toString() == chatSessions2) {
-                await bot.sendChatAction(msg.chat.id, 'upload_photo')
+                await bot.sendChatAction(chatSessions1, 'upload_photo')
                 await bot.sendPhoto(chatSessions1, msg.photo[msg.photo.length - 1].file_id, {
                     has_spoiler: true
                 })
